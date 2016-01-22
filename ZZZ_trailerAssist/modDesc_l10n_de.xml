@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+	<!-- Note that 'description' is only here for easier translations. It needs to be manually copied to ModDesc.XML later. -->
+	<description><![CDATA[Trailer Assist]]></description>
+
+	<texts>
+		<text name="taMODE0" text="TrailerAssist [aus]" />
+		<text name="taMODE1" text="TrailerAssist [Winkel]" />
+		<text name="taMODE2" text="TrailerAssist [Rotation]" />
+		<text name="taMODE3" text="TrailerAssist [Rotation neg.]" />
+	</texts>
+</l10n>

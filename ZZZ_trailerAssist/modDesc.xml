@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<modDesc descVersion="23">
+	<author>mogli</author>
+	<title>
+		<en>Trailer Assist</en>
+		<de>Trailer Assist</de> 
+	</title>
+	<description>
+		<en><![CDATA[Trailer Assist]]></en>
+		<de><![CDATA[Trailer Assist]]></de>
+	</description>
+	<multiplayer supported="true"/>   
+	<iconFilename>store.dds</iconFilename>
+	<version>0.9.0.1</version>
+	<inputBindings>
+		<input name="taMODE" category="VEHICLE" key1="KEY_lctrl KEY_t" visible="false" />
+	</inputBindings>
+	<l10n filenamePrefix="modDesc_l10n">
+		<text name="taVERSION">
+			<de>trailerAssist v1.0 b1</de>
+			<en>trailerAssist v1.0 b1</en>
+		</text>
+	</l10n>
+	<extraSourceFiles>
+		<sourceFile filename="register.lua" />
+	</extraSourceFiles>    
+</modDesc>
