@@ -28,11 +28,10 @@ function trailerAssist_Register:loadMap(name)
 				end;
 			end;	
 		end;
-		g_i18n.globalI18N.texts["taVERSION"] = g_i18n:getText("taVERSION");		
-		g_i18n.globalI18N.texts["taMODE0"]   = g_i18n:getText("taMODE0");		
-		g_i18n.globalI18N.texts["taMODE1"]   = g_i18n:getText("taMODE1");		
-		g_i18n.globalI18N.texts["taMODE2"]   = g_i18n:getText("taMODE2");		
-		g_i18n.globalI18N.texts["taMODE3"]   = g_i18n:getText("taMODE3");		
+		g_i18n.globalI18N.texts["taVERSION"]    = g_i18n:getText("taVERSION");		
+		g_i18n.globalI18N.texts["taMODE0"]      = g_i18n:getText("taMODE0");		
+		g_i18n.globalI18N.texts["taMODE1"]      = g_i18n:getText("taMODE1");		
+		g_i18n.globalI18N.texts["taMODE2"]      = g_i18n:getText("taMODE2");		
 	end;
 end;
 

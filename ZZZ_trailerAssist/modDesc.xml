@@ -11,16 +11,18 @@
 	</description>
 	<multiplayer supported="true"/>   
 	<iconFilename>store.dds</iconFilename>
-	<version>0.9.0.1</version>
-	<inputBindings>
-		<input name="taMODE" category="VEHICLE" key1="KEY_lctrl KEY_t" visible="false" />
-	</inputBindings>
+	<version>0.9.0.2</version>
 	<l10n filenamePrefix="modDesc_l10n">
 		<text name="taVERSION">
-			<de>trailerAssist v1.0 b1</de>
-			<en>trailerAssist v1.0 b1</en>
+			<de>trailerAssist v1.0 b2</de>
+			<en>trailerAssist v1.0 b2</en>
 		</text>
 	</l10n>
+	<inputBindings>
+		<input name="taMODE"  category="VEHICLE" key1="KEY_lctrl KEY_t" visible="false" />
+		<input name="taMODE1" category="VEHICLE" key1="KEY_f11" visible="false" />
+		<input name="taMODE2" category="VEHICLE" key1="KEY_f12" visible="false" />
+	</inputBindings>
 	<extraSourceFiles>
 		<sourceFile filename="register.lua" />
 	</extraSourceFiles>    

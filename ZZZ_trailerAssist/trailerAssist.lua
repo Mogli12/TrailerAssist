@@ -8,26 +8,49 @@ source(Utils.getFilename("mogliBase.lua", g_currentModDirectory))
 _G[g_currentModName..".mogliBase"].newClass( "trailerAssist" )
 --***************************************************************
 
-trailerAssist.defaultMode       = 2
-trailerAssist.minMode           = 1
-trailerAssist.maxMode           = 2
-trailerAssist.minJointRotLimit  = math.rad( 0.1 )
-trailerAssist.steeringFactor1   = 2.5 
-trailerAssist.steeringFactor2   = 0 --3.5
-trailerAssist.rotScale          = 1.0
-trailerAssist.worldScale        = math.rad( 30 )
-trailerAssist.autoRotateBack    = 0.1
-trailerAssist.steeringSpeed     = 2
-trailerAssist.minSteeringSpeed  = 0.5
-trailerAssist.maxSumDtCalc      = 1000
-trailerAssist.maxSumDtDisp      = 200
-trailerAssist.speedLimit        = 10
-trailerAssist.maxToolDegrees    = 60
-trailerAssist.maxWorldRatio     = 1.0
-trailerAssist.worldFactor       = 1.0 / math.rad( trailerAssist.maxToolDegrees )
-trailerAssist.mathPi2           = 0.5 * math.pi
+function trailerAssist.globalsReset( createIfMissing )
 
-trailerAssist.debug             = false
+	trailerAssistGlobals = {}
+
+	trailerAssistGlobals.defaultMode       = 0
+	trailerAssistGlobals.minMode           = 0
+	trailerAssistGlobals.maxMode           = 0
+	trailerAssistGlobals.minJointRotLimit  = 0
+	trailerAssistGlobals.steeringFactor1   = 0
+	trailerAssistGlobals.steeringFactor2   = 0
+	trailerAssistGlobals.rotScale          = 0
+	trailerAssistGlobals.worldScale        = 0
+	trailerAssistGlobals.minWorldScale     = 0
+	trailerAssistGlobals.autoRotateBack    = 0
+	trailerAssistGlobals.steeringSpeed     = 0
+	trailerAssistGlobals.minSteeringSpeed  = 0
+	trailerAssistGlobals.maxSumDtCalc      = 0
+	trailerAssistGlobals.maxSumDtDisp      = 0
+	trailerAssistGlobals.speedLimit        = 0
+	trailerAssistGlobals.maxToolDegrees    = 0
+	trailerAssistGlobals.maxWorldRatio     = 0
+	trailerAssistGlobals.invertReverse     = true
+	
+	trailerAssistGlobals.debug             = false
+
+	local file
+	file = trailerAssist.baseDirectory.."trailerAssistConfig.xml"
+	if fileExists(file) then	
+		trailerAssist.globalsLoad( file, "trailerAssistGlobals", trailerAssistGlobals )	
+	else
+		print("ERROR: NO GLOBALS IN "..file)
+	end
+	
+	file = trailerAssist.modsDirectory.."trailerAssistConfig.xml"
+	if fileExists(file) then	
+		trailerAssist.globalsLoad( file, "trailerAssistGlobals", trailerAssistGlobals )	
+	end
+
+	trailerAssistGlobals.mathPi2           = 0.5 * math.pi
+end
+
+trailerAssist.globalsReset( false )
+
 function trailerAssist.debugPrint( ... )
 	if trailerAssist.debug then
 		print( ... )
@@ -44,8 +67,11 @@ function trailerAssist:load(xmlFile)
 	self.isSelectable = true
 	self.taWorldAngle = nil
 	self.taLastAngle  = 0
+	self.taMovingDirection = 0
+	self.taLastMovingDirection = 0
 	
-	trailerAssist.registerState( self, "taMode",         trailerAssist.defaultMode, trailerAssist.onSetMode, true )	
+	trailerAssist.registerState( self, "taModeStatic",   trailerAssistGlobals.defaultMode, nil, true )	
+	trailerAssist.registerState( self, "taMode",         trailerAssistGlobals.defaultMode, trailerAssist.onSetMode )	
 	trailerAssist.registerState( self, "taIsPossible",   false )	
 	trailerAssist.registerState( self, "taDisplayAngle", 0 )	
 	trailerAssist.registerState( self, "taWorldDispAngle", 0 )	 
@@ -60,10 +86,10 @@ function trailerAssist:draw()
 		setTextAlignment(RenderText.ALIGN_CENTER) 
 		setTextBold(true)
 		
-		if self.taMode >= 2 then
-			renderText(0.5, 0.9, 0.03, string.format( "%2d° / %2d°", self.taDisplayAngle, self.taWorldDispAngle ) )
+		if self.taMode == 1 then
+			renderText(0.5, 0.965, 0.03, string.format( "%2d° / %2d°", self.taDisplayAngle, self.taWorldDispAngle ) )
 		else
-			renderText(0.5, 0.9, 0.03, string.format( "%2d°", self.taDisplayAngle ) )
+			renderText(0.5, 0.965, 0.03, string.format( "%2d°", self.taDisplayAngle ) )
 		end
 
 		setTextColor(1, 1, 1, 1) 
@@ -81,11 +107,12 @@ end
 -- update
 --***************************************************************
 function trailerAssist:update(dt)
+	self.taMovingDirection = trailerAssist.getMovingDirection( self )
+
 	if self.isServer then
 		if self.isEntered and trailerAssist.tableGetN( self.attachedImplements ) > 0 then
 			self.taSumDtCalc = self.taSumDtCalc + dt
-			if     self.taJoints          == nil 
-					or self.taSumDtCalc           >= trailerAssist.maxSumDtCalc then
+			if self.taSumDtCalc >= trailerAssistGlobals.maxSumDtCalc then
 				trailerAssist.fillTaJoints( self )
 			end
 		elseif self.taJoints ~= nil then
@@ -94,16 +121,33 @@ function trailerAssist:update(dt)
 		end
 	end
 	
-	if      self:getIsActiveForInput( false )
-			and self.taIsPossible
-			and trailerAssist.mbHasInputEvent( "taMODE" ) then
-		if     self.taMode == 0 then
-			trailerAssist.mbSetState( self, "taMode", trailerAssist.minMode )
-		elseif self.taMode <  trailerAssist.maxMode then
-			trailerAssist.mbSetState( self, "taMode", self.taMode + 1 )
+	if      self:getIsActiveForInput( false )		
+			and self.taIsPossible then
+		if trailerAssist.mbHasInputEvent( "taMODE", true ) then
+			if     self.taModeStatic == 0 then
+				trailerAssist.mbSetState( self, "taModeStatic", trailerAssistGlobals.minMode )
+			elseif self.taModeStatic <  trailerAssistGlobals.maxMode then
+				trailerAssist.mbSetState( self, "taModeStatic", self.taModeStatic + 1 )
+			else
+				trailerAssist.mbSetState( self, "taModeStatic", 0 )
+			end	
+		end
+
+		if     trailerAssist.mbIsInputPressed( "taMODE1", true ) then
+			if self.taModeStatic == 1 then
+				trailerAssist.mbSetState( self, "taMode", 0 )
+			else
+				trailerAssist.mbSetState( self, "taMode", 1 )
+			end
+		elseif trailerAssist.mbIsInputPressed( "taMODE2", true ) then
+			if self.taModeStatic == 2 then
+				trailerAssist.mbSetState( self, "taMode", 0 )
+			else
+				trailerAssist.mbSetState( self, "taMode", 2 )
+			end
 		else
-			trailerAssist.mbSetState( self, "taMode", 0 )
-		end	
+			trailerAssist.mbSetState( self, "taMode", self.taModeStatic )
+		end
 	end	
 end
 
@@ -112,43 +156,62 @@ end
 --***************************************************************
 function trailerAssist:updateTick(dt)
 	if self.isServer and self.taMode > 0 then
-		if trailerAssist.getMovingDirection( self ) > 0 then
-			self.taLastRatio  = 0
-			self.taWorldAngle = nil
+		if math.abs( self.taMovingDirection ) > 0 then
+			if self.taMovingDirection * self.taLastMovingDirection < 0 then
+				self.taLastRatio  = 0
+				self.taWorldAngle = nil
+			end
+			self.taLastMovingDirection = self.taMovingDirection
 		end	
+		
 		if trailerAssist.isActive( self ) then
 			self.taSumDtDisp = self.taSumDtDisp + dt
-			if self.taSumDtDisp >= trailerAssist.maxSumDtDisp then
+			if self.taSumDtDisp >= trailerAssistGlobals.maxSumDtDisp then
 				self.taSumDtDisp = 0
-				local degree = 0
-				if self.taMode >= 2 then
+				if self.taMode == 1 then
 					if self.taWorldAngle ~= nil then					
-						degree = math.deg( trailerAssist.normalizeAngle( self.taWorldAngle - self.taLastAngle ) )
-						trailerAssist.mbSetState( self, "taWorldDispAngle", math.floor( 0.5 + math.deg( self.taWorldAngle ) ) )
+						trailerAssist.mbSetState( self, "taDisplayAngle",   math.floor( 0.5 +  math.deg( trailerAssist.normalizeAngle( self.taWorldAngle - self.taLastAngle ) ) ) )
+						local degree = trailerAssist.normalizeAngle( self.taWorldAngle )
+						if self.taMovingDirection > 0 then
+							degree = degree + math.pi
+						end
+						if degree < 0 then
+							degree = degree + math.pi + math.pi
+						end
+						trailerAssist.mbSetState( self, "taWorldDispAngle", math.floor( 0.5 + math.deg( degree ) ) )
 					else
 						trailerAssist.mbSetState( self, "taWorldDispAngle", 0 )
 					end
 				else
-					degree = trailerAssist.maxToolDegrees * self.taLastRatio
+					trailerAssist.mbSetState( self, "taDisplayAngle", math.floor( 0.5 +  math.deg( trailerAssistGlobals.maxToolDegrees * self.taLastRatio ) ) )
 				end
-				trailerAssist.mbSetState( self, "taDisplayAngle", math.floor( 0.5 + degree ) )
 			end
 		elseif self.taDisplayAngle ~= 0 then
 			self.taSumDtDisp = 0
 			trailerAssist.mbSetState( self, "taDisplayAngle", 0 )
+			trailerAssist.mbSetState( self, "taWorldDispAngle", 0 )
 		end
 	end
 end
 
 --***************************************************************
--- onDisplayAngle
+-- isActive
 --***************************************************************
 function trailerAssist:isActive()
-	return ( self.isEntered and self.taMode > 0 and self.taIsPossible and ( trailerAssist.getMovingDirection( self ) < 0 ) )
+	if self.isEntered and self.steeringEnabled and self.taMode > 0 and self.taIsPossible and math.abs( self.taMovingDirection ) > 0 then
+		for _,joint in pairs( self.taJoints ) do
+			if     self.taMovingDirection < 0 and joint.inTheBack then
+				return true
+			elseif self.taMovingDirection > 0 and not ( joint.inTheBack ) then
+				return true
+			end
+		end
+	end
+	return false
 end
 
 --***************************************************************
--- onDisplayAngle
+-- onSetMode
 --***************************************************************
 function trailerAssist:onSetMode( old, new, noEventSend )
 	trailerAssist.debugPrint( "onSetMode: "..tostring(new).." (was "..tostring(old)..")" )
@@ -200,10 +263,10 @@ function trailerAssist:calculateDimensions()
 			and self.articulatedAxis.componentJoint ~= nil
       and self.articulatedAxis.componentJoint.jointNode ~= nil 
 			and self.articulatedAxis.rotMax then
-		_,_,self.taDimensions.zOffset = AutoSteeringEngine.getRelativeTranslation(self.taRefNode,self.articulatedAxis.componentJoint.jointNode);
+		_,_,self.taDimensions.zOffset = trailerAssist.getRelativeTranslation(self.taRefNode,self.articulatedAxis.componentJoint.jointNode);
 		local n=0;
 		for _,wheel in pairs(self.wheels) do
-			local x,y,z = AutoSteeringEngine.getRelativeTranslation(self.articulatedAxis.componentJoint.jointNode,wheel.driveNode);
+			local x,y,z = trailerAssist.getRelativeTranslation(self.articulatedAxis.componentJoint.jointNode,wheel.driveNode);
 			if n==0 then
 				self.taDimensions.wheelBase = math.abs(z)
 				n = 1
@@ -227,7 +290,7 @@ function trailerAssist:calculateDimensions()
 			local temp2 = { getRotation(wheel.repr) }
 			setRotation(wheel.driveNode, 0, 0, 0)
 			setRotation(wheel.repr, 0, 0, 0)
-			local x,y,z = AutoSteeringEngine.getRelativeTranslation(self.taRefNode,wheel.driveNode);
+			local x,y,z = trailerAssist.getRelativeTranslation(self.taRefNode,wheel.driveNode);
 			setRotation(wheel.repr, unpack(temp2))
 			setRotation(wheel.driveNode, unpack(temp1))
 
@@ -354,12 +417,25 @@ function trailerAssist:getTaJoints1( refNode, zOffset )
 	for _,implement in pairs( self.attachedImplements ) do
 		if      implement.object ~= nil 
 				and implement.object.steeringAxleNode ~= nil 
-				and trailerAssist.getRelativeZTranslation( refNode, implement.object.steeringAxleNode ) < zOffset
 				and ( trailerAssist.tableGetN( implement.object.wheels ) > 0
 					 or trailerAssist.tableGetN( implement.object.attachedImplements ) > 0 ) then
+					 
+			local bool = ( trailerAssist.getRelativeZTranslation( refNode, implement.object.steeringAxleNode ) < zOffset )
+
 			trailerAssist.debugPrint( tostring(trailerAssist.getRelativeZTranslation( refNode, implement.object.steeringAxleNode )) .." < "..tostring(zOffset))
-			taJoints = trailerAssist.getTaJoints2( self, implement, refNode, zOffset )
-			if trailerAssist.tableGetN( taJoints ) > 0 then
+			local taJoints2 = trailerAssist.getTaJoints2( self, implement, refNode, zOffset )
+			local iLast     = trailerAssist.tableGetN( taJoints2 )
+			if iLast > 0 then
+				if taJoints == nil then
+					taJoints = {}
+				end
+				for i,joint in pairs( taJoints2 ) do
+					joint.inTheBack = bool
+					if i == iLast and not bool then
+						joint.otherDirection = true
+					end
+					table.insert( taJoints, joint )
+				end
 				break
 			end
 		end
@@ -434,10 +510,10 @@ function trailerAssist:getTaJoints2( implement, refNode, zOffset )
 	
 	if      implement.jointRotLimit    ~= nil
 			and implement.jointRotLimit[2] ~= nil
-			and implement.jointRotLimit[2] >  trailerAssist.minJointRotLimit then
+			and implement.jointRotLimit[2] >  trailerAssistGlobals.minJointRotLimit then
 		trailerAssist.debugPrint("Adding attacher joint")
 		table.insert( taJoints, index,
-									{ nodeVehicle  = refNode, 
+									{ nodeVehicle  = self.attacherJoints[implement.jointDescIndex].rootNode, --refNode, 
 										nodeTrailer  = trailer.attacherJoint.rootNode, 
 										targetFactor = 1 } )
 	end
@@ -476,7 +552,7 @@ function trailerAssist:getTaJoints2( implement, refNode, zOffset )
 				for _,cj in pairs( trailer.componentJoints ) do
 					if thisN[cj.componentIndices[1]] and not ( allN[cj.componentIndices[2]] ) then
 						table.insert( nextN, cj.componentIndices[2] )
-						if cj.rotLimit[2] > trailerAssist.minJointRotLimit then
+						if cj.rotLimit[2] > trailerAssistGlobals.minJointRotLimit then
 							trailerAssist.debugPrint( "Adding inner joint between "..tostring(cj.componentIndices[1]).." and "..tostring(cj.componentIndices[2]))
 							table.insert( taJoints, index,
 														{ nodeVehicle  = trailer.components[cj.componentIndices[1]].node,
@@ -486,7 +562,7 @@ function trailerAssist:getTaJoints2( implement, refNode, zOffset )
 					end
 					if thisN[cj.componentIndices[2]] and not ( allN[cj.componentIndices[1]] ) then
 						table.insert( nextN, cj.componentIndices[1] )
-						if cj.rotLimit[2] > trailerAssist.minJointRotLimit then
+						if cj.rotLimit[2] > trailerAssistGlobals.minJointRotLimit then
 							trailerAssist.debugPrint( "Adding inner joint between "..tostring(cj.componentIndices[2]).." and "..tostring(cj.componentIndices[1]))
 							table.insert( taJoints, index,
 														{ nodeVehicle  = trailer.components[cj.componentIndices[2]].node,
@@ -510,10 +586,7 @@ function trailerAssist:getMovingDirection()
 
 	if      self.mrGbMS ~= nil
 			and self.mrGbMS.IsOn then
-		local rev = self.mrGbMS.ReverseActive
-		if self.isReverseDriving then rev = not ( rev ) end
-			
-		if     rev then 
+		if     self.mrGbMS.ReverseActive then 
 			movingDirection = -1
 		elseif self.mrGbMS.NeutralActive then
 			movingDirection = 0 
@@ -521,10 +594,7 @@ function trailerAssist:getMovingDirection()
 			movingDirection = 1
 		end
 	elseif  self.mrGbMIsOn then
-		local rev = self.mrGbMReverseActive
-		if self.isReverseDriving then rev = not ( rev ) end
-
-		if     rev then 
+		if     self.mrGbMReverseActive then 
 			movingDirection = -1
 		elseif self.mrGbMNeutralActive then
 			movingDirection = 0 
@@ -570,7 +640,7 @@ function trailerAssist.getWorldYRotation(node)
 	if math.abs(x) < 1e-3 and math.abs(z) < 1e-3 then
 		return 0
 	end
-	return trailerAssist.normalizeAngle( math.atan2(z,x) + trailerAssist.mathPi2 )
+	return trailerAssist.normalizeAngle( math.atan2(z,x) + trailerAssistGlobals.mathPi2 )
 end
 
 --***************************************************************
@@ -604,7 +674,7 @@ end
 -- steeringFunction
 --***************************************************************
 function trailerAssist.steeringFunction( target, angle, ratio )
-	if trailerAssist.steeringFactor2 > 0 then	
+	if trailerAssistGlobals.steeringFactor2 > 0 then	
 		local diff = angle - ratio
 		
 		local sign = 0
@@ -617,16 +687,16 @@ function trailerAssist.steeringFunction( target, angle, ratio )
 			return target 
 		end
 		
-		if trailerAssist.steeringFactor1 > 0 then	
-			local h1 = trailerAssist.steeringFactor1 * diff
-			local h2 = ( trailerAssist.steeringFactor2 * diff )^2
+		if trailerAssistGlobals.steeringFactor1 > 0 then	
+			local h1 = trailerAssistGlobals.steeringFactor1 * diff
+			local h2 = ( trailerAssistGlobals.steeringFactor2 * diff )^2
 			
 			return Utils.clamp( target + sign * math.min( h1, h2 ), -1, 1 )
 		end
 		return Utils.clamp( target + sign * h2, -1, 1 )
 	end
 	
-	return Utils.clamp( target + trailerAssist.steeringFactor1 * ( angle - ratio ), -1, 1 )
+	return Utils.clamp( target + trailerAssistGlobals.steeringFactor1 * ( angle - ratio ), -1, 1 )
 end
 
 --***************************************************************
@@ -645,8 +715,11 @@ end
 --***************************************************************
 function trailerAssist:newUpdateVehiclePhysics(superFunc, axisForward, axisForwardIsAnalog, axisSide, axisSideIsAnalog, dt, ...)
 	
-	local backup = self.rotatedTime
+--if self.taInvertReverse and self.taMovingDirection < 0 then
+--	axisSide = -axisSide 
+--end		
 	
+	local lastRotatedTime = self.rotatedTime
 	local state,result = pcall( superFunc, self, axisForward, axisForwardIsAnalog, axisSide, axisSideIsAnalog, dt, ... )
 	
 	if not (state) then
@@ -655,79 +728,100 @@ function trailerAssist:newUpdateVehiclePhysics(superFunc, axisForward, axisForwa
 	end
 	
 	if trailerAssist.isActive( self ) then
-		if self.taMode >= 2 then			
-			local yv = trailerAssist.getWorldYRotation( self.taRefNode )
-			local yt = trailerAssist.getWorldYRotation( self.taJoints[1].nodeTrailer )
-
-			if self.taWorldAngle == nil then
-				self.taWorldAngle = yt
-			end
-
-			self.taLastAngle  = yt
-			self.taWorldAngle = self.taWorldAngle - dt*0.001*axisSide*trailerAssist.worldScale
-			self.taLastRatio  = Utils.clamp( trailerAssist.worldFactor * trailerAssist.normalizeAngle( self.taWorldAngle - self.taLastAngle ), -trailerAssist.maxWorldRatio, trailerAssist.maxWorldRatio )
-			
-			
-			trailerAssist.debugPrint( tostring(math.floor(0.5+math.deg(self.taWorldAngle))).."° "..
-																tostring(math.floor(0.5+math.deg(self.taLastAngle))).."° "..
-																tostring(math.floor(0.5+math.deg(trailerAssist.normalizeAngle( self.taWorldAngle - self.taLastAngle )))).."° "..
-																tostring(math.floor( 0.5 + 100 * self.taLastRatio )).."%" )
-			
-			if self.taMode == 3 then
-				self.taLastRatio = -self.taLastRatio
-			end
-		else
-			if     axisSide < 0 then
-				self.taLastRatio = math.min(self.taLastRatio - dt*0.001*axisSide*trailerAssist.rotScale, 1)
-			elseif 0 < axisSide then
-				self.taLastRatio = math.max(self.taLastRatio - dt*0.001*axisSide*trailerAssist.rotScale, -1)
-			else
-				if 0 < self.taLastRatio then
-					self.taLastRatio = math.max(self.taLastRatio - dt*0.001*trailerAssist.autoRotateBack * math.abs( self.lastSpeedReal ) * 1000, 0)
-				else                                                           
-					self.taLastRatio = math.min(self.taLastRatio + dt*0.001*trailerAssist.autoRotateBack * math.abs( self.lastSpeedReal ) * 1000, 0)
-				end
-			end		
-
-		end
-		
-		local ratio  = self.taLastRatio
-		local target = ratio
-
 		local sumTargetFactors = 0
 		for _,joint in pairs( self.taJoints ) do
-			sumTargetFactors = sumTargetFactors + joint.targetFactor
+			if     ( self.taMovingDirection < 0 and joint.inTheBack )
+					or ( self.taMovingDirection > 0 and not ( joint.inTheBack  ) ) then
+				sumTargetFactors = sumTargetFactors + joint.targetFactor
+			end
 		end
 		
-	--local degreeSum = 0
-	--local degreeStr = ""
+		if sumTargetFactors > 0 then
+			if self.taMovingDirection < 0 and not trailerAssistGlobals.invertReverse then
+				axisSide = -axisSide
+			end
 		
-		local maxToolDegrees = trailerAssist.maxToolDegrees / sumTargetFactors
-		for _,joint in pairs( self.taJoints ) do
-			target    = joint.targetFactor * ratio
-			degree    = math.deg( trailerAssist.getRelativeYRotation( joint.nodeVehicle, joint.nodeTrailer ) )
-		--degreeSum = degreeSum + degree 
-		--degreeStr = degreeStr .. tostring(math.floor( 0.5 + degree )) .. "° "
-			angle     = Utils.clamp( degree / maxToolDegrees, -1, 1 )	
-			ratio     = trailerAssist.steeringFunction( target, angle, ratio )
-		end
+			if self.taMode == 1 then			
+				local yt = trailerAssist.getWorldYRotation( self.taJoints[1].nodeTrailer )
 
-	--degreeStr = degreeStr .. " => " .. tostring(math.floor( 0.5 + degreeSum )) .. "° => "..tostring(math.floor( 0.5 + 100 * ratio )).."%"
-	--trailerAssist.debugPrint(degreeStr)
+				if self.taWorldAngle == nil then
+					self.taWorldAngle = yt
+				end
+				
+				local rotScale = math.max( trailerAssistGlobals.minWorldScale, trailerAssistGlobals.worldScale * math.abs( trailerAssist.normalizeAngle( self.taWorldAngle - self.taLastAngle ) ) )
+				
+				self.taLastAngle  = yt
+				self.taWorldAngle = self.taWorldAngle + dt*0.001*axisSide*rotScale
+				local checkAngle  = trailerAssist.normalizeAngle( self.taWorldAngle - self.taLastAngle )
+				if     checkAngle < -trailerAssistGlobals.mathPi2 then
+					checkAngle = -trailerAssistGlobals.mathPi2
+					self.taWorldAngle = checkAngle + self.taLastAngle
+				elseif checkAngle >  trailerAssistGlobals.mathPi2 then
+					checkAngle =  trailerAssistGlobals.mathPi2
+					self.taWorldAngle = checkAngle + self.taLastAngle
+				end
+				
+				local maxWorldRatio = trailerAssistGlobals.maxWorldRatio / trailerAssist.tableGetN( self.taJoints  )
+				
+				self.taLastRatio  = Utils.clamp( checkAngle / trailerAssistGlobals.maxToolDegrees, -maxWorldRatio, maxWorldRatio )
+				
+				
+			--trailerAssist.debugPrint( tostring(math.floor(0.5+math.deg(self.taWorldAngle))).."° "..
+			--													tostring(math.floor(0.5+math.deg(self.taLastAngle))).."° "..
+			--													tostring(math.floor(0.5+math.deg(trailerAssist.normalizeAngle( self.taWorldAngle - self.taLastAngle )))).."° "..
+			--													tostring(math.floor( 0.5 + 100 * self.taLastRatio )).."%" )
+				
+				if self.taMode == 3 then
+					self.taLastRatio = -self.taLastRatio
+				end
+			else
+				if axisSideIsAnalog then
+					self.taLastRatio = axisSide 
+				elseif math.abs( axisSide ) > 0 then
+					self.taLastRatio = Utils.clamp(self.taLastRatio + dt*0.001*axisSide*trailerAssistGlobals.rotScale, -1, 1)
+				elseif self.taLastRatio > 0 then
+					self.taLastRatio = math.max(self.taLastRatio - dt*0.001*trailerAssistGlobals.autoRotateBack * math.abs( self.lastSpeedReal ) * 1000, 0)
+				else                                                           
+					self.taLastRatio = math.min(self.taLastRatio + dt*0.001*trailerAssistGlobals.autoRotateBack * math.abs( self.lastSpeedReal ) * 1000, 0)
+				end		
 
-		local targetRotTime = 0
-		if     ratio > 0 then
-			targetRotTime =  self.maxRotTime * ratio 
-		elseif ratio < 0 then
-			targetRotTime = -self.minRotTime * ratio 
-		end		
-		
-		local steeringSpeed = dt * math.max( math.abs( self.lastSpeedReal ) * 1000 * trailerAssist.steeringSpeed, trailerAssist.minSteeringSpeed ) * self.aiSteeringSpeed
-		
-		if targetRotTime > backup then
-			self.rotatedTime = math.min(backup + steeringSpeed, targetRotTime);
-		else
-			self.rotatedTime = math.max(backup - steeringSpeed, targetRotTime);
+			end
+			
+			local ratio  = self.taLastRatio
+			local target = ratio
+
+			local maxToolDegrees = trailerAssistGlobals.maxToolDegrees / sumTargetFactors
+			for _,joint in pairs( self.taJoints ) do
+				if     ( self.taMovingDirection < 0 and joint.inTheBack )
+						or ( self.taMovingDirection > 0 and not ( joint.inTheBack  ) ) then
+					target    = joint.targetFactor * ratio
+					degree    = trailerAssist.getRelativeYRotation( joint.nodeVehicle, joint.nodeTrailer )
+					if joint.otherDirection then
+						degree  = trailerAssist.normalizeAngle( degree + math.pi )
+					end
+					angle     = Utils.clamp( degree / maxToolDegrees, -1, 1 )	
+					ratio     = trailerAssist.steeringFunction( target, angle, ratio )
+				end
+			end
+			
+			if self.taMovingDirection > 0 then
+				ratio = -ratio
+			end
+			
+			local targetRotTime = 0
+			if     ratio > 0 then
+				targetRotTime =  self.maxRotTime * ratio 
+			elseif ratio < 0 then
+				targetRotTime = -self.minRotTime * ratio 
+			end		
+			
+			local steeringSpeed = dt * math.max( math.abs( self.lastSpeedReal ) * 1000 * trailerAssistGlobals.steeringSpeed, trailerAssistGlobals.minSteeringSpeed ) * self.aiSteeringSpeed
+			
+			if targetRotTime > lastRotatedTime then
+				self.rotatedTime = math.min(lastRotatedTime + steeringSpeed, targetRotTime);
+			else
+				self.rotatedTime = math.max(lastRotatedTime - steeringSpeed, targetRotTime);
+			end
 		end
 	end
 	
@@ -739,7 +833,7 @@ end
 --***************************************************************
 function trailerAssist:newGetSpeedLimit( superFunc, ... )
 	if trailerAssist.isActive( self ) then
-		return math.min( superFunc( self, ... ), trailerAssist.speedLimit )
+		return math.min( superFunc( self, ... ), trailerAssistGlobals.speedLimit )
 	end
 	return superFunc( self, ... )
 end

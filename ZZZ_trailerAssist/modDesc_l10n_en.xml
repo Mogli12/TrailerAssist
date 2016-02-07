@@ -5,8 +5,7 @@
 
 	<texts>
 		<text name="taMODE0"      text="TrailerAssist [off]" />
-		<text name="taMODE1"      text="TrailerAssist [tool angle]" />
-		<text name="taMODE2"      text="TrailerAssist [rotation]" />
-		<text name="taMODE3"      text="TrailerAssist [rotation neg.]" />
+		<text name="taMODE1"      text="TrailerAssist [rotation]" />
+		<text name="taMODE2"      text="TrailerAssist [tool angle]" />
 	</texts>
 </l10n>
