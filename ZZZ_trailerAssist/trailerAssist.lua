@@ -52,7 +52,7 @@ end
 trailerAssist.globalsReset( false )
 
 function trailerAssist.debugPrint( ... )
-	if trailerAssist.debug then
+	if trailerAssistGlobals.debug then
 		print( ... )
 	end
 end

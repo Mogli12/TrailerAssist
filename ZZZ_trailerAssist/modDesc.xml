@@ -11,11 +11,11 @@
 	</description>
 	<multiplayer supported="true"/>   
 	<iconFilename>store.dds</iconFilename>
-	<version>0.9.0.2</version>
+	<version>1.0.0.0</version>
 	<l10n filenamePrefix="modDesc_l10n">
 		<text name="taVERSION">
-			<de>trailerAssist v1.0 b2</de>
-			<en>trailerAssist v1.0 b2</en>
+			<de>trailerAssist v1.0</de>
+			<en>trailerAssist v1.0</en>
 		</text>
 	</l10n>
 	<inputBindings>
