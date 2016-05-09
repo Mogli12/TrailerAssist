@@ -552,7 +552,7 @@ function trailerAssist:getTaJoints2( implement, refNode, zOffset )
 				for _,cj in pairs( trailer.componentJoints ) do
 					if thisN[cj.componentIndices[1]] and not ( allN[cj.componentIndices[2]] ) then
 						table.insert( nextN, cj.componentIndices[2] )
-						if cj.rotLimit[2] > trailerAssistGlobals.minJointRotLimit then
+						if cj.rotLimit ~= nil and cj.rotLimit[2] ~= nil and cj.rotLimit[2] > trailerAssistGlobals.minJointRotLimit then
 							trailerAssist.debugPrint( "Adding inner joint between "..tostring(cj.componentIndices[1]).." and "..tostring(cj.componentIndices[2]))
 							table.insert( taJoints, index,
 														{ nodeVehicle  = trailer.components[cj.componentIndices[1]].node,
@@ -562,7 +562,7 @@ function trailerAssist:getTaJoints2( implement, refNode, zOffset )
 					end
 					if thisN[cj.componentIndices[2]] and not ( allN[cj.componentIndices[1]] ) then
 						table.insert( nextN, cj.componentIndices[1] )
-						if cj.rotLimit[2] > trailerAssistGlobals.minJointRotLimit then
+						if cj.rotLimit ~= nil and cj.rotLimit[2] ~= nil and cj.rotLimit[2] > trailerAssistGlobals.minJointRotLimit then
 							trailerAssist.debugPrint( "Adding inner joint between "..tostring(cj.componentIndices[2]).." and "..tostring(cj.componentIndices[1]))
 							table.insert( taJoints, index,
 														{ nodeVehicle  = trailer.components[cj.componentIndices[2]].node,
