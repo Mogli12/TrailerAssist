@@ -60,7 +60,7 @@ end
 --***************************************************************
 -- load
 --***************************************************************
-function trailerAssist:load(xmlFile)
+function trailerAssist:load(saveGame)
 	self.taLastRatio  = 0
 	self.taSumDtCalc  = 0
 	self.taSumDtDisp  = 0
@@ -198,7 +198,12 @@ end
 -- isActive
 --***************************************************************
 function trailerAssist:isActive()
-	if self.isEntered and self.steeringEnabled and self.taMode > 0 and self.taIsPossible and math.abs( self.taMovingDirection ) > 0 then
+	if      self.isEntered
+			and self.steeringEnabled
+			and self.taMode ~= nil
+			and self.taMode > 0
+			and self.taIsPossible
+			and math.abs( self.taMovingDirection ) > 0 then
 		for _,joint in pairs( self.taJoints ) do
 			if     self.taMovingDirection < 0 and joint.inTheBack then
 				return true
@@ -713,14 +718,14 @@ end
 --***************************************************************
 -- newUpdateVehiclePhysics
 --***************************************************************
-function trailerAssist:newUpdateVehiclePhysics(superFunc, axisForward, axisForwardIsAnalog, axisSide, axisSideIsAnalog, dt, ...)
+function trailerAssist:newUpdateVehiclePhysics( superFunc, axisForward, axisForwardIsAnalog, axisSide, axisSideIsAnalog, doHandbrake, dt, ... )
 	
 --if self.taInvertReverse and self.taMovingDirection < 0 then
 --	axisSide = -axisSide 
 --end		
 	
 	local lastRotatedTime = self.rotatedTime
-	local state,result = pcall( superFunc, self, axisForward, axisForwardIsAnalog, axisSide, axisSideIsAnalog, dt, ... )
+	local state,result = pcall( superFunc, self, axisForward, axisForwardIsAnalog, axisSide, axisSideIsAnalog, doHandbrake, dt, ... )
 	
 	if not (state) then
 		print("Error in trailerAssist:newUpdateVehiclePhysics : "..tostring(result))

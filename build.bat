@@ -1,4 +1,4 @@
-del ZZZ_trailerAssist.zip
-cd ZZZ_trailerAssist
-"C:\Program Files\WinRAR\winrar" A -r ..\ZZZ_trailerAssist.zip *.*
+del FS17_TrailerAssist.zip
+cd FS17_TrailerAssist
+"C:\Program Files\WinRAR\winrar" A -r ..\FS17_TrailerAssist.zip *.*
 cd ..
