@@ -4,7 +4,7 @@
 	<minMode          type="float"  value="1" />
 	<maxMode          type="float"  value="2" />
 	<minJointRotLimit type="degree" value="0.1" />
-	<steeringFactor1  type="float"  value="2.0" />
+	<steeringFactor1  type="float"  value="3.0" />
 	<steeringFactor2  type="float"  value="0" />
 	<rotScale         type="float"  value="1.0" />
 	<worldScale       type="degree" value="90" />
@@ -15,7 +15,7 @@
 	<maxSumDtCalc     type="float"  value="1000" />
 	<maxSumDtDisp     type="float"  value="200" />
 	<speedLimit       type="float"  value="10" />
-	<maxToolDegrees   type="degree" value="90" />
+	<maxToolDegrees   type="degree" value="60" />
 	<maxWorldRatio    type="float"  value="0.75" />
 	<invertReverse    type="bool"   value="true" />
 	<debug            type="bool"   value="false" />
