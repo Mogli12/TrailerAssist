@@ -1,4 +1,4 @@
-# Trailer Assist for Farming Simulator 2015
+# Trailer Assist for Farming Simulator 2017
 
 ## Description
 
