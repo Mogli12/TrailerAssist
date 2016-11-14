@@ -29,6 +29,9 @@ function trailerAssist.globalsReset( createIfMissing )
 	trailerAssistGlobals.speedLimit        = 0
 	trailerAssistGlobals.maxToolDegrees    = 0
 	trailerAssistGlobals.maxWorldRatio     = 0
+	trailerAssistGlobals.xPosCenter        = 0
+	trailerAssistGlobals.yPosTop           = 0
+	trailerAssistGlobals.textSize          = 0
 	trailerAssistGlobals.invertReverse     = true
 	
 	trailerAssistGlobals.debug             = false
@@ -82,19 +85,68 @@ end
 --***************************************************************
 function trailerAssist:draw()
 	if trailerAssist.isActive( self ) then
-		setTextColor(1, 1, 0, 1) 
-		setTextAlignment(RenderText.ALIGN_CENTER) 
-		setTextBold(true)
-		
-		if self.taMode == 1 then
-			renderText(0.5, 0.965, 0.03, string.format( "%2d° / %2d°", self.taDisplayAngle, self.taWorldDispAngle ) )
-		else
-			renderText(0.5, 0.965, 0.03, string.format( "%2d°", self.taDisplayAngle ) )
+	
+		if trailerAssist.backgroundOverlayId == nil then
+			trailerAssist.backgroundOverlayId = createImageOverlay( "dataS2/menu/blank.png" )
+			setOverlayColor( trailerAssist.backgroundOverlayId, 0,0,0, 0.4 )
 		end
 
+		setTextAlignment(RenderText.ALIGN_CENTER) 
+		
+		setTextColor(1, 1, 0, 1) 
+		setTextBold(true)
+		
+		local uiScale = trailerAssist.getUiScale()		
+		local hudPos  = { 0, 0, 0, 0 }
+		local txtPos  = { trailerAssistGlobals.xPosCenter, trailerAssistGlobals.yPosTop - trailerAssistGlobals.textSize * 1.1, trailerAssistGlobals.textSize, "<error>" }
+		
+		if txtPos[3] < 0.01 then
+			txtPos[3] = 0.01
+		end
+		
+		local border  = txtPos[3] * 0.1	
+		local xFactor = math.max( txtPos[3], 0.02 )
+		local yFactor = 0.5625 * g_screenAspectRatio * uiScale
+		local yBorder = border * yFactor 
+		local version = 0.01   * yFactor 
+		
+		txtPos[2] = Utils.clamp( trailerAssistGlobals.yPosTop - 1.1 * txtPos[3], 0, 1 - 1.1 * txtPos[3] )
+		txtPos[1] = Utils.clamp( trailerAssistGlobals.xPosCenter, 1.5 * xFactor + border, 1 - 1.5 * xFactor - border )
+		
+		if self.taMode == 1 then
+			hudPos[3] = 3 * xFactor + 2 * border
+			txtPos[4] = string.format( "%2d° / %2d°", self.taDisplayAngle, self.taWorldDispAngle ) 
+		else
+			hudPos[3] = 2 * xFactor + 2 * border 
+			txtPos[4] = string.format( "%2d°", self.taDisplayAngle )
+		end
+		
+		if txtPos[2] < 0.5 then
+			txtPos[2] = txtPos[2] * yFactor 
+		else
+			txtPos[2] = 1 - ( 1 - txtPos[2] ) * yFactor 
+		end
+		txtPos[3] = txtPos[3] * yFactor 
+		
+		hudPos[2] = txtPos[2] - version - 3 * yBorder
+		hudPos[3] = hudPos[3] * uiScale 
+		hudPos[4] = txtPos[3] + version + 3 * yBorder
+		hudPos[1] = txtPos[1] - 0.5 * hudPos[3]
+		
+		
+		renderOverlay( trailerAssist.backgroundOverlayId, unpack( hudPos ) )
+		renderText( unpack( txtPos ) )
+		
 		setTextColor(1, 1, 1, 1) 
-		setTextAlignment(RenderText.ALIGN_LEFT) 
 		setTextBold(false)
+		
+		txtPos[3] = version
+		txtPos[2] = txtPos[2] - version - yBorder 
+		txtPos[4] = trailerAssist.getText("taVERSION")
+		
+		renderText( unpack( txtPos ) )
+
+		setTextAlignment(RenderText.ALIGN_LEFT) 
 	end	
 	
 	if self.taIsPossible and InputBinding.taMODE ~= nil then
@@ -587,39 +639,32 @@ end
 -- getMovingDirection
 --***************************************************************
 function trailerAssist:getMovingDirection()
-	local movingDirection = 0
 
 	if      self.mrGbMS ~= nil
 			and self.mrGbMS.IsOn then
 		if     self.mrGbMS.ReverseActive then 
-			movingDirection = -1
-		elseif self.mrGbMS.NeutralActive then
-			movingDirection = 0 
+			return -1
+	--elseif self.mrGbMS.NeutralActive then
+	--	return 0 
 		else 
-			movingDirection = 1
+			return 1
 		end
-	elseif  self.mrGbMIsOn then
-		if     self.mrGbMReverseActive then 
-			movingDirection = -1
-		elseif self.mrGbMNeutralActive then
-			movingDirection = 0 
-		else 
-			movingDirection = 1
-		end
-		self.ksmShuttleControl = true
-	elseif  g_currentMission.driveControl ~= nil
-			and g_currentMission.driveControl.useModules ~= nil
-			and g_currentMission.driveControl.useModules.shuttle 
-			and self.driveControl ~= nil 
+	elseif  self.dCcheckModule        ~=  nil 
+			and self.driveControl         ~= nil
+			and self:dCcheckModule("shuttle")
 			and self.driveControl.shuttle ~= nil 
+			and self.driveControl.shuttle.isActive 
 			and self.driveControl.shuttle.direction ~= nil 
 			and self.driveControl.shuttle.isActive then
-		movingDirection = self.driveControl.shuttle.direction
-	else
-		movingDirection = self.movingDirection
+		return self.driveControl.shuttle.direction
+	elseif  math.abs( self.movingDirection ) > 0 
+			and math.abs( self.lastSpeed ) > 0.00054 then	
+		return self.movingDirection
+	elseif self.taMovingDirection ~= nil then
+		return self.taMovingDirection
 	end
 		
-	return movingDirection
+	return 0
 end
 
 

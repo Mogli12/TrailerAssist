@@ -15,6 +15,7 @@
 -- 3.06 degrees support in globalsLoad
 -- 3.10 FS17 version
 -- 3.11 postLoad to load old savegame
+-- 3.12 getUiScale
 
 -- Usage:  source(Utils.getFilename("mogliBase.lua", g_currentModDirectory));
 --         _G[g_currentModDirectory.."mogliBase"].newClass( "AutoCombine", "acParameters" )
@@ -144,6 +145,17 @@ else
 			end
 		end
 
+	--********************************
+	-- getUiScale
+	--********************************
+		function _newClass_.getUiScale()
+			local uiScale = 1.0
+			if g_gameSettings ~= nil and g_gameSettings.getValue ~= nil then
+					uiScale = Utils.getNoNil(g_gameSettings:getValue("uiScale"), 1.0)
+			end
+			return uiScale 
+		end
+		
 	--********************************
 	-- getText
 	--********************************

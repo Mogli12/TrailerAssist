@@ -19,4 +19,7 @@
 	<maxWorldRatio    type="float"  value="0.75" />
 	<invertReverse    type="bool"   value="true" />
 	<debug            type="bool"   value="false" />
+	<xPosCenter       type="float"  value="0.5" />
+	<yPosTop          type="float"  value="0.97" />
+	<textSize         type="float"  value="0.03" />
 </trailerAssistGlobals>

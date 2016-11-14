@@ -14,7 +14,7 @@ F11: Navigation with compass; TrailerAssist attempts to move the trailer in the 
 F12: Navigation angle between tractor and trailer; TrailerAssist tries reach the displayed angle between tractor and trailer
 A: Turn left
 D: Turn right
-Ctrl T: Activate TrailerAssist on permanently.
+Ctrl T: Activate TrailerAssist permanently.
 
 You can see that TrailerAssist is activated when grade numbers with yellow font appear at the top of the screen. Although TrailerAssist is permanently switched on, it will only be active when driving backwards.		
 ]]></en>
@@ -43,11 +43,11 @@ Vous pouvez voir que TrailerAssist est activé lorsque les numéros de grade ave
 	</description>
 	<multiplayer supported="true"/>   
 	<iconFilename>store.dds</iconFilename>
-	<version>2.0.0.0</version>
+	<version>2.0.0.1</version>
 	<l10n filenamePrefix="modDesc_l10n">
 		<text name="taVERSION">
-			<de>trailerAssist v2.0</de>
-			<en>trailerAssist v2.0</en>
+			<de>TrailerAssist v2.0</de>
+			<en>TrailerAssist v2.0</en>
 		</text>
 	</l10n>
 	<inputBindings>
