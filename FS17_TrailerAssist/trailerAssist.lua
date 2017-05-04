@@ -78,6 +78,7 @@ function trailerAssist:load(saveGame)
 	trailerAssist.registerState( self, "taIsPossible",   false )	
 	trailerAssist.registerState( self, "taDisplayAngle", 0 )	
 	trailerAssist.registerState( self, "taWorldDispAngle", 0 )	 
+	trailerAssist.registerState( self, "taDirectionBits", 0 )	 
 end
 
 --***************************************************************
@@ -167,8 +168,28 @@ function trailerAssist:update(dt)
 			if self.taSumDtCalc >= trailerAssistGlobals.maxSumDtCalc then
 				trailerAssist.fillTaJoints( self )
 			end
+			local inTheFront, inTheBack = false, false
+			if self.taJoints ~= nil then
+				for _,joint in pairs( self.taJoints ) do
+					if joint.inTheBack then
+						inTheBack  = true
+					else
+						intheFront = true
+					end
+				end
+			end
+			if inTheFront and inTheBack then
+				trailerAssist.mbSetState( self, "taDirectionBits", 3 )
+			elseif inTheFront then
+				trailerAssist.mbSetState( self, "taDirectionBits", 2 )
+			elseif inTheBack  then
+				trailerAssist.mbSetState( self, "taDirectionBits", 1 )
+			else
+				trailerAssist.mbSetState( self, "taDirectionBits", 0 )
+			end
 		elseif self.taJoints ~= nil then
 			trailerAssist.mbSetState( self, "taIsPossible", false )
+			trailerAssist.mbSetState( self, "taDirectionBits", 0 )
 			self.taJoints = nil
 		end
 	end
@@ -200,7 +221,7 @@ function trailerAssist:update(dt)
 		else
 			trailerAssist.mbSetState( self, "taMode", self.taModeStatic )
 		end
-	end	
+	end		
 end
 
 --***************************************************************
@@ -252,16 +273,18 @@ end
 function trailerAssist:isActive()
 	if      self.isEntered
 			and self.steeringEnabled
-			and self.taMode ~= nil
-			and self.taMode > 0
 			and self.taIsPossible
+			and self.taMode          ~= nil
+			and self.taMode          > 0
+			and self.taDirectionBits ~= nil
+			and self.taDirectionBits > 0
 			and math.abs( self.taMovingDirection ) > 0 then
-		for _,joint in pairs( self.taJoints ) do
-			if     self.taMovingDirection < 0 and joint.inTheBack then
-				return true
-			elseif self.taMovingDirection > 0 and not ( joint.inTheBack ) then
-				return true
-			end
+		if      self.taMovingDirection < 0 
+				and ( self.taDirectionBits == 1 or self.taDirectionBits == 3 ) then
+			return true
+		elseif  self.taMovingDirection > 0 
+				and ( self.taDirectionBits == 2 or self.taDirectionBits == 3 ) then
+			return true
 		end
 	end
 	return false
