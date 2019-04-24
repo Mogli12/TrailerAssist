@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<modDesc descVersion="42">
+	<author>mogli</author>
+	<title>
+		<en>Trailer Assist</en>
+		<de>Trailer Assist</de> 
+		<fr>Trailer Assist</fr> 
+	</title>
+	<description>
+		<en><![CDATA[
+TrailerAssist is a small tool to make reversing with a trailer easier. You activate it with the following keys:
+
+F11: Navigation with compass; TrailerAssist attempts to move the trailer in the indicated direction
+F12: Navigation angle between tractor and trailer; TrailerAssist tries reach the displayed angle between tractor and trailer
+A: Turn left
+D: Turn right
+Ctrl T: Activate TrailerAssist permanently.
+
+You can see that TrailerAssist is activated when grade numbers with yellow font appear at the top of the screen. Although TrailerAssist is permanently switched on, it will only be active when driving backwards.		
+
+Changelog v2.1
+- Bug fix in multiplayer
+]]></en>
+		<de><![CDATA[
+TrailerAssist ist ein kleines Werkzeug um das Rückwärtsrangieren mit Anhänger zu erleichtern. Man kann es mit folgenden Tasten bedienen:
+
+F11: Navigation mit Kompass; TrailerAssist versucht den Anhänger in die angezeigte Himmelsrichtung zu bewegen
+F12: Navigation über Winkel zwischen Traktor und Anhänger; TrailerAssist versucht den angezeigten Winkel zwischen Zugfahrzeug und Anhänger zu erreichen
+A: nach links fahren
+D: nach rechts fahren
+Strg T: Mit dieser Taste kann man den TrailerAssist permanent einschalten.
+
+Man kann erkennen, dass TrailerAssist eingeschaltet ist, wenn am oberen Bildrand in der Mitte Gradzahlen mit gelber Schrift angezeigt werden. Auch wenn TrailerAssist dauerhaft eingeschaltet ist, so wird er nur tatsächlich aktiviert, wenn man auch rückwärts fährt.
+
+Changelog v2.1
+- Bug fix in multiplayer
+]]></de>
+		<fr><![CDATA[
+TrailerAssist est un petit outil pour rendre l'inversion avec une remorque plus facile. Vous l'activez avec les touches suivantes:
+
+F11: Navigation avec boussole; TrailerAssist tente de déplacer la remorque dans la direction indiquée
+F12: Angle de navigation entre le tracteur et la remorque; TrailerAssist tente d'atteindre l'angle affiché entre le tracteur et la remorque
+A: Tourner à gauche
+D: Tourner à droite
+Ctrl T: Activez TrailerAssist sur permanence.
+
+Vous pouvez voir que TrailerAssist est activé lorsque les numéros de grade avec police jaune apparaissent en haut de l'écran. Bien que TrailerAssist soit activé en permanence, il ne sera actif que lorsque vous roulez en arrière.
+
+Changelog v2.1
+- Bug fix in multiplayer
+]]></fr>
+	</description>
+	<multiplayer supported="true"/>   
+	<iconFilename>store.dds</iconFilename>
+	<version>0.0.0.1</version>
+	<l10n filenamePrefix="modDesc_l10n">
+		<text name="taVERSION">
+			<de>TrailerAssist v0.0.0.1</de>
+			<en>TrailerAssist v0.0.0.1</en>
+		</text>
+	</l10n>
+	<actions>
+		<action name="taMODE"  category="VEHICLE" />
+		<action name="taMODE1" category="VEHICLE" />
+		<action name="taMODE2" category="VEHICLE" />
+	</actions>
+	<inputBinding>
+		<actionBinding action="taMODE" ><binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_t" axisComponent="+" inputComponent="+" index="1"/></actionBinding>	
+		<actionBinding action="taMODE1"><binding device="KB_MOUSE_DEFAULT" input="KEY_f11" axisComponent="+" inputComponent="+" index="1"/></actionBinding>	
+		<actionBinding action="taMODE2"><binding device="KB_MOUSE_DEFAULT" input="KEY_f12" axisComponent="+" inputComponent="+" index="1"/></actionBinding>	
+	</inputBinding>
+	<extraSourceFiles>
+		<sourceFile filename="trailerAssist.lua" />
+		<sourceFile filename="register.lua" />
+	</extraSourceFiles>    
+</modDesc>
