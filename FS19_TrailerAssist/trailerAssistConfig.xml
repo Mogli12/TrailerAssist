@@ -5,7 +5,8 @@
 	<maxMode          type="float"  value="2" />
 	<minJointRotLimit type="degree" value="0.1" />
 	<steeringFactor1  type="float"  value="3.0" />
-	<steeringFactor2  type="float"  value="0" />
+	<steeringFactor2  type="float"  value="0.0" />
+	<steeringSpeed    type="float"  value="2.0" />
 	<rotScale         type="float"  value="1.0" />
 	<worldScale       type="degree" value="90" />
 	<minWorldScale    type="degree" value="10" />

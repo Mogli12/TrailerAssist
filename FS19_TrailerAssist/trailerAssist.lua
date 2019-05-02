@@ -18,6 +18,7 @@ function trailerAssist.globalsReset( createIfMissing )
 	trailerAssistGlobals.minJointRotLimit  = 0
 	trailerAssistGlobals.steeringFactor1   = 0
 	trailerAssistGlobals.steeringFactor2   = 0
+	trailerAssistGlobals.steeringSpeed     = 0
 	trailerAssistGlobals.rotScale          = 0
 	trailerAssistGlobals.worldScale        = 0
 	trailerAssistGlobals.minWorldScale     = 0
@@ -394,9 +395,10 @@ function trailerAssist:calculateDimensions()
 	end
 	
 	self.taDimensions                  = {};
-	self.taDimensions.radius           = 5;
-  self.taDimensions.maxSteeringAngle = math.rad(25);
-	self.taDimensions.wheelBase        = self.taDimensions.radius * math.tan( self.taDimensions.maxSteeringAngle )
+	
+	self.taDimensions.maxSteeringAngle = math.rad( Utils.getNoNil( self.maxRotation, 25 ))
+	self.taDimensions.radius           = Utils.getNoNil( self.maxTurningRadius, 6.25 )
+	self.taDimensions.wheelBase        = math.tan( self.taDimensions.maxSteeringAngle ) * self.taDimensions.radius
 	self.taDimensions.zOffset          = -0.5 * self.taDimensions.wheelBase;
 	
 	if      self.articulatedAxis ~= nil 
@@ -515,8 +517,8 @@ function trailerAssist:calculateDimensions()
 		
 	if math.abs( self.taDimensions.wheelBase ) > 1E-3 and math.abs( self.taDimensions.maxSteeringAngle ) > 1E-4 then
 		self.taDimensions.radius        = self.taDimensions.wheelBase / math.tan( self.taDimensions.maxSteeringAngle );
-	elseif self.aiTractorTurnRadius ~= nil then
-		self.taDimensions.radius        = self.aiTractorTurnRadius
+	elseif self.maxTurningRadius ~= nil then
+		self.taDimensions.radius        = self.maxTurningRadius
 	else
 		self.taDimensions.radius        = 5;
 	end
@@ -802,20 +804,19 @@ function trailerAssist.steeringFunction( target, angle, ratio )
 		local diff = angle - ratio
 		
 		local sign = 0
-		if     diff < -0.01 then
+		if     diff < 0 then
 			sign = -1
 			diff = -diff
-		elseif diff >  0.01 then
+		elseif diff > 0 then
 			sign = 1
 		else
 			return target 
 		end
 		
+		local h2 = ( trailerAssistGlobals.steeringFactor2 * diff )^2
 		if trailerAssistGlobals.steeringFactor1 > 0 then	
-			local h1 = trailerAssistGlobals.steeringFactor1 * diff
-			local h2 = ( trailerAssistGlobals.steeringFactor2 * diff )^2
-			
-			return trailerAssist.mbClamp( target + sign * math.min( h1, h2 ), -1, 1 )
+			local h1 = trailerAssistGlobals.steeringFactor1 * diff			
+			return trailerAssist.mbClamp( target + sign * 0.5 * ( h1 + h2 ), -1, 1 ) --math.min( h1, h2 )
 		end
 		return trailerAssist.mbClamp( target + sign * h2, -1, 1 )
 	end
@@ -918,8 +919,8 @@ function trailerAssist:newUpdateVehiclePhysics( superFunc, axisForward, axisSide
 			if self.taMovingDirection < 0 then
 				ratio = -ratio
 			end
-			
-			local d = 0.0005 * ( 2 + math.min( 18, self.lastSpeed * 3600 ) ) * dt
+						
+			local d = trailerAssistGlobals.steeringSpeed * 0.0005 * ( 2 + math.min( 18, self.lastSpeed * 3600 ) ) * dt
 
 			if axisSideLast == nil then 
 				axisSideLast = axisSide

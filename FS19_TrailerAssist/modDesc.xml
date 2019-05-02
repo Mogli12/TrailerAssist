@@ -52,11 +52,11 @@ Changelog v2.1
 	</description>
 	<multiplayer supported="true"/>   
 	<iconFilename>store.dds</iconFilename>
-	<version>0.0.0.1</version>
+	<version>0.0.0.2</version>
 	<l10n filenamePrefix="modDesc_l10n">
 		<text name="taVERSION">
-			<de>TrailerAssist v0.0.0.1</de>
-			<en>TrailerAssist v0.0.0.1</en>
+			<de>TrailerAssist v0.0.0.2</de>
+			<en>TrailerAssist v0.0.0.2</en>
 		</text>
 	</l10n>
 	<actions>
