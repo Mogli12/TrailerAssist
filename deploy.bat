@@ -1,2 +1,2 @@
 @echo "mods"
-@xcopy FS19_TrailerAssist.zip "C:\Work\FarmingSimulator2019Mods" /R/U/Y/Q
+@xcopy FS22_TrailerAssist.zip "C:\Users\stefa\OneDrive\Dokumente\My Games\FarmingSimulator2022\mods" /R/U/Y/Q
