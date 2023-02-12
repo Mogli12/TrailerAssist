@@ -7,7 +7,7 @@
 		<text name="taMODE0" text="TrailerAssist [aus]" />
 		<text name="taMODE1" text="TrailerAssist [Rotation]" />
 		<text name="taMODE2" text="TrailerAssist [Winkel]" />
-		<text name="input_taMODE0" text="TrailerAssist" />
+		<text name="input_taMODE" text="TrailerAssist" />
 		<text name="input_taMODE1" text="TrailerAssist [Rotation]" />
 		<text name="input_taMODE2" text="TrailerAssist [Winkel]" />
 	</texts>

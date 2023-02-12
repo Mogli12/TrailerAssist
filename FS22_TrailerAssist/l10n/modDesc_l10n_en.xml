@@ -7,5 +7,8 @@
 		<text name="taMODE0"      text="TrailerAssist [off]" />
 		<text name="taMODE1"      text="TrailerAssist [rotation]" />
 		<text name="taMODE2"      text="TrailerAssist [tool angle]" />
+		<text name="input_taMODE" text="TrailerAssist" />
+		<text name="input_taMODE1" text="TrailerAssist [rotation]" />
+		<text name="input_taMODE2" text="TrailerAssist [tool angle]" />
 	</texts>
 </l10n>

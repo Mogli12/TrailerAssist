@@ -70,7 +70,6 @@ end
 
 function trailerAssist.registerEventListeners(vehicleType)
 	for _,n in pairs( { "onLoad", 
-											"onPreUpdate", 
 											"onUpdate", 
 											"onUpdateTick", 
 											"onDraw",
@@ -191,21 +190,29 @@ function trailerAssist:onDraw()
 	end 
 end
 
+function trailerAssist:afterDrivableSetSteeringInput(inputValue, isAnalog, deviceCategory)
+	self.taSteeringInput = inputValue		
+end 
+
+Drivable.setSteeringInput = Utils.appendedFunction( Drivable.setSteeringInput, trailerAssist.afterDrivableSetSteeringInput )
+
 --***************************************************************
 -- update
 --***************************************************************
-function trailerAssist:onPreUpdate(dt, isActiveForInput, isActiveForInputIgnoreSelection, isSelected)
-
-	if trailerAssist.isActive( self ) then 
-		local axisSide = self.spec_drivable.lastInputValues.axisSteer
-		if self.taMovingDirection < 0 and not trailerAssistGlobals.invertReverse then
-			axisSide = -axisSide
-		end
-		trailerAssist.mbSetState( self, "taAxisSide", axisSide )
-	end 	
-end 
-
 function trailerAssist:onUpdate(dt, isActiveForInput, isActiveForInputIgnoreSelection, isSelected)
+	if self.taSteeringInput ~= nil then 
+		if trailerAssist.isActive( self ) then 
+			if self.taMovingDirection < 0 and not trailerAssistGlobals.invertReverse then
+				trailerAssist.mbSetState( self, "taAxisSide", -self.taSteeringInput )
+			else
+				trailerAssist.mbSetState( self, "taAxisSide", self.taSteeringInput )
+			end
+		end
+		self.taSteeringInput = nil 
+	elseif self.isClient and isActiveForInputIgnoreSelection then 
+		trailerAssist.mbSetState( self, "taAxisSide", 0 )
+	end 	
+
 
 	if self.isServer then
 		local motor
@@ -391,7 +398,7 @@ function trailerAssist:onUpdateTick(dt, isActiveForInput, isActiveForInputIgnore
 				local text = ""
 				
 				if     actionName == "taMODE" then 
-					isActive = self.taIsPossible and not canBeActive
+					isActive = self.taIsPossible
 					if     self.taModeStatic == 1 then 
 						text = trailerAssist.getText("taMODE1")
 					elseif self.taModeStatic == 2 then 
